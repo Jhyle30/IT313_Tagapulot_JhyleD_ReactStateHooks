@@ -1,98 +1,180 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Button, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+function useStopwatch(isRunning: boolean) {
+  const [seconds, setSeconds] = useState(0);
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setSeconds((s) => s + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isRunning]);
+
+  return seconds;
+}
+
+function PracticeTracker({
+  solved,
+  onSolve,
+  onReset,
+}: {
+  solved: number;
+  onSolve: () => void;
+  onReset: () => void;
+}) {
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View style={styles.section}>
+      <Text style={styles.heading}>Practice Tracker</Text>
+
+      <Text style={styles.solved}>
+        Solved: {solved}
+      </Text>
+
+      <View style={styles.button}>
+        <Button
+          title="Solve +1"
+          onPress={onSolve}
+        />
+      </View>
+
+      <View style={styles.button}>
+        <Button
+          title="Reset"
+          onPress={onReset}
+        />
+      </View>
+
+      {solved >= 5 && (
+        <Text style={styles.message}>
+          Great job!
+        </Text>
+      )}
+    </View>
   );
 }
 
-export default function HomeScreen() {
+function Stopwatch({
+  seconds,
+}: {
+  seconds: number;
+}) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View style={styles.section}>
+      <Text style={styles.heading}>Stopwatch</Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <Text style={styles.timer}>
+        {String(minutes).padStart(2, "0")}:
+        {String(remainingSeconds).padStart(2, "0")}
+      </Text>
+    </View>
+  );
+}
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+export default function LabScreen() {
+  const [solved, setSolved] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+  const seconds = useStopwatch(isRunning);
+
+  function handleSolve() {
+    setSolved((s) => s + 1);
+  }
+
+  function handleReset() {
+    setSolved(0);
+  }
+
+  function handleStart() {
+    setIsRunning(true);
+  }
+
+  function handleStop() {
+    setIsRunning(false);
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>
+        LAB 5
+      </Text>
+
+      <PracticeTracker
+        solved={solved}
+        onSolve={handleSolve}
+        onReset={handleReset}
+      />
+
+      <Stopwatch
+        seconds={seconds}
+      />
+
+      <View style={styles.button}>
+        <Button
+          title="START"
+          onPress={handleStart}
+        />
+      </View>
+
+      <View style={styles.button}>
+        <Button
+          title="STOP"
+          onPress={handleStop}
+        />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    padding: 30,
+    alignItems: "center",
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
+
   title: {
-    textAlign: 'center',
+    fontSize: 30,
+    fontWeight: "bold",
+    marginBottom: 25,
   },
-  code: {
-    textTransform: 'uppercase',
+
+  section: {
+    alignItems: "center",
+    marginBottom: 25,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+
+  heading: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  solved: {
+    fontSize: 20,
+    marginBottom: 15,
+  },
+
+  timer: {
+    fontSize: 40,
+    fontWeight: "bold",
+  },
+
+  button: {
+    width: 200,
+    marginVertical: 5,
+  },
+
+  message: {
+    fontSize: 18,
+    marginTop: 10,
   },
 });
